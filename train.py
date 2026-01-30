@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
@@ -114,6 +115,33 @@ class UNet(nn.Module):
         
         return self.final(d1)
 
+# ========== DICE LOSS (New for IoU Optimization) ==========
+class DiceLoss(nn.Module):
+    def __init__(self, smooth=1.0):
+        super().__init__()
+        self.smooth = smooth
+        
+    def forward(self, pred, target):
+        pred = torch.softmax(pred, dim=1)
+        num_classes = pred.shape[1]
+        target_one_hot = F.one_hot(target, num_classes=num_classes).permute(0,3,1,2).float()
+        intersection = (pred * target_one_hot).sum(dim=(2,3))
+        union = pred.sum(dim=(2,3)) + target_one_hot.sum(dim=(2,3))
+        dice = (2. * intersection + self.smooth) / (union + self.smooth)
+        return 1 - dice.mean()
+
+class CombinedLoss(nn.Module):
+    """Combines CrossEntropy (pixel accuracy) with Dice (IoU optimization)"""
+    def __init__(self, ce_weight, ce_ratio=0.5, dice_ratio=0.5):
+        super().__init__()
+        self.ce = nn.CrossEntropyLoss(weight=ce_weight)
+        self.dice = DiceLoss()
+        self.ce_ratio = ce_ratio
+        self.dice_ratio = dice_ratio
+        
+    def forward(self, pred, target):
+        return self.ce_ratio * self.ce(pred, target) + self.dice_ratio * self.dice(pred, target)
+
 # ========== TRAINING ==========
 def calculate_iou(pred, target, num_classes):
     ious = []
@@ -127,10 +155,17 @@ def calculate_iou(pred, target, num_classes):
     return np.mean(ious) if ious else 0
 
 def main():
-    # Data transforms
+    # ========== DATA AUGMENTATION (New) ==========
+    # Train transform: Augment for diversity
+    train_transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.2),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+        transforms.ToTensor(),
+    ])
     
-    # Image: Just ToTensor (Resize was done offline)
-    img_transform = transforms.Compose([
+    # Validation transform: No augmentation
+    val_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
     
@@ -138,12 +173,12 @@ def main():
     train_dataset = SegmentationDataset(
         f"{DATASET_ROOT}/train/images",
         f"{DATASET_ROOT}/train/masks",
-        img_transform=img_transform
+        img_transform=train_transform  # WITH Augmentation
     )
     val_dataset = SegmentationDataset(
         f"{DATASET_ROOT}/val/images",
         f"{DATASET_ROOT}/val/masks",
-        img_transform=img_transform
+        img_transform=val_transform  # NO Augmentation
     )
     
     # OPTIMIZATION: Use multiple workers and pinned memory
@@ -214,8 +249,15 @@ def main():
 
     # Model, loss, optimizer
     model = UNet(num_classes=NUM_CLASSES).to(DEVICE)
-    criterion = nn.CrossEntropyLoss(weight=class_weights)
+    
+    # UPGRADED: Use Dice+CE combined loss for direct IoU optimization
+    criterion = CombinedLoss(ce_weight=class_weights, ce_ratio=0.5, dice_ratio=0.5)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
+    # NEW: LR Scheduler - Reduce LR when validation loss plateaus
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', factor=0.5, patience=5, verbose=True
+    )
     
     # ========== RESUME LOGIC ==========
     start_epoch = 0
@@ -275,7 +317,11 @@ def main():
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
         
-        print(f"Epoch {epoch+1}: Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, Val IoU: {avg_val_iou:.4f}")
+        # Step the LR scheduler
+        scheduler.step(avg_val_loss)
+        current_lr = optimizer.param_groups[0]['lr']
+        
+        print(f"Epoch {epoch+1}: Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, Val IoU: {avg_val_iou:.4f}, LR: {current_lr:.6f}")
         
         # Save checkpoints
         os.makedirs(CHECKPOINT_DIR, exist_ok=True)

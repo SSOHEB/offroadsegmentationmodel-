@@ -35,9 +35,18 @@ We implemented a **U-Net** architecture, chosen for its ability to capture both 
 *   **Head**:
     *   Final $1\times1$ Convolution mapping to **10 Output Classes**.
 
+## 3. Results
+
+| Metric | Value |
+| :--- | :--- |
+| **Final Val IoU** | **0.5264** (52.6%) |
+| **Training Epochs** | 50 |
+| **Time per Epoch** | ~2 minutes (Colab T4) |
+| **Total Training Time** | ~1.5 hours |
+
 ---
 
-## 3. Engineering Challenges & Solutions
+## 4. Engineering Challenges & Solutions
 
 | Challenge | Root Cause | Engineering Solution |
 | :--- | :--- | :--- |
@@ -49,11 +58,26 @@ We implemented a **U-Net** architecture, chosen for its ability to capture both 
 
 ---
 
-## 4. Optimization Summary
+## 5. Training Progress & Convergence
 
-*   **Speed**: Optimized from **~3600s/epoch** (Baseline) to **~105s/epoch** (Final). **[34x Speedup]**
-*   **Memory**: Reduced VRAM usage by fixing batch size at 8 for 256x256 resolution.
-*   **Workflow**: Implemented **Checkpointing** (Resume Logic) to make the training robust against interruptions or Colab timeouts.
+### Loss Curves
+Training was monitored across 50 epochs. Key patterns observed:
+
+| Phase | Epochs | Train Loss | Val IoU | Behavior |
+| :--- | :--- | :--- | :--- | :--- |
+| **Rapid Learning** | 1-10 | 1.43 → 0.59 | 0.26 → 0.40 | Model learns background/foreground |
+| **Refinement** | 10-25 | 0.59 → 0.43 | 0.40 → 0.48 | Edge detection improves |
+| **Plateau** | 25-40 | 0.43 → 0.38 | 0.48 → 0.52 | Diminishing returns |
+| **Convergence** | 40-50 | 0.38 → 0.35 | 0.52 → 0.53 | Stable oscillation |
+
+### Anomalies Detected
+-   **Epoch 46**: Val Loss spiked to 0.55 (batch variance). Recovered by Epoch 49.
+-   **Class 7 (Obstacle)**: Started being detected around Epoch 20 after class weighting took effect.
+
+### Optimization Summary
+-   **Speed**: ~3600s/epoch (Baseline CPU) → **~105s/epoch** (Colab T4). **[34x Speedup]**
+-   **Memory**: VRAM usage ~4GB at batch_size=8, resolution=256x256.
+-   **Checkpointing**: Auto-save every epoch enabled resume after Colab disconnects.
 
 ---
 

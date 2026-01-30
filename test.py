@@ -46,7 +46,53 @@ COLORS = [
 COLOR_MAP = np.array(COLORS, dtype=np.uint8)
 
 # ========== UNET MODEL (Same as train.py) ==========
-# ... (UNet Code omitted for brevity, it's fine) ...
+class DoubleConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, 3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+    
+    def forward(self, x):
+        return self.conv(x)
+
+class UNet(nn.Module):
+    def __init__(self, in_channels=3, num_classes=NUM_CLASSES):
+        super().__init__()
+        
+        # Encoder
+        self.enc1 = DoubleConv(in_channels, 64)
+        self.enc2 = DoubleConv(64, 128)
+        self.enc3 = DoubleConv(128, 256)
+        self.enc4 = DoubleConv(256, 512)
+        
+        # Decoder
+        self.dec3 = DoubleConv(256 + 512, 256)
+        self.dec2 = DoubleConv(128 + 256, 128)
+        self.dec1 = DoubleConv(64 + 128, 64)
+        
+        self.pool = nn.MaxPool2d(2)
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.final = nn.Conv2d(64, num_classes, 1)
+        
+    def forward(self, x):
+        # Encoder
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool(e1))
+        e3 = self.enc3(self.pool(e2))
+        e4 = self.enc4(self.pool(e3))
+        
+        # Decoder
+        d3 = self.dec3(torch.cat([self.up(e4), e3], dim=1))
+        d2 = self.dec2(torch.cat([self.up(d3), e2], dim=1))
+        d1 = self.dec1(torch.cat([self.up(d2), e1], dim=1))
+        
+        return self.final(d1)
 
 # ========== TEST DATASET ==========
 class TestDataset(Dataset):
