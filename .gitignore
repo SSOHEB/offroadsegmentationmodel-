@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Environments
+.env
+venv/
+env/
+anaconda3/
+
+# Data & Models
+checkpoints/
+*.pth
+data/
+dataset/
+**/*Dataset*/
+Offroad_Segmentation_Training_Dataset/
+
+# Logs & Results
+runs/
+*.log
+results/
+!results/*.png
+
+# OS
+Thumbs.db
+.DS_Store
