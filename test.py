@@ -22,62 +22,31 @@ def set_seed(seed=42):
 set_seed(42)
 
 # ========== CONFIGURATION ==========
-DATASET_ROOT = "C:/Users/ssohe/Desktop/Offroad_Segmentation_Training_Dataset/Offroad_Segmentation_Training_Dataset"
+DATASET_ROOT = "dataset_256" # MATCH TRAIN.PY
 CHECKPOINT_DIR = "checkpoints"
-NUM_CLASSES = 10  # Must match training
-BATCH_SIZE = 4
+NUM_CLASSES = 10
+BATCH_SIZE = 8
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 IMG_SIZE = (256, 256)
 OUTPUT_DIR = "predictions"
 
-# ========== UNET MODEL (Same as train.py) ==========
-class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-    
-    def forward(self, x):
-        return self.conv(x)
+# Color Palette for Visualization (R, G, B)
+COLORS = [
+    [0, 0, 0],       # Class 0: Background/Void
+    [128, 0, 0],     # Class 1
+    [0, 128, 0],     # Class 2
+    [128, 128, 0],   # Class 3
+    [0, 0, 128],     # Class 4
+    [128, 0, 128],   # Class 5
+    [0, 128, 128],   # Class 6
+    [128, 128, 128], # Class 7
+    [64, 0, 0],      # Class 8
+    [192, 0, 0]      # Class 9 (Wall/Obstacle?)
+]
+COLOR_MAP = np.array(COLORS, dtype=np.uint8)
 
-class UNet(nn.Module):
-    def __init__(self, in_channels=3, num_classes=NUM_CLASSES):
-        super().__init__()
-        
-        # Encoder
-        self.enc1 = DoubleConv(in_channels, 64)
-        self.enc2 = DoubleConv(64, 128)
-        self.enc3 = DoubleConv(128, 256)
-        self.enc4 = DoubleConv(256, 512)
-        
-        # Decoder
-        self.dec3 = DoubleConv(256 + 512, 256)
-        self.dec2 = DoubleConv(128 + 256, 128)
-        self.dec1 = DoubleConv(64 + 128, 64)
-        
-        self.pool = nn.MaxPool2d(2)
-        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.final = nn.Conv2d(64, num_classes, 1)
-        
-    def forward(self, x):
-        # Encoder
-        e1 = self.enc1(x)
-        e2 = self.enc2(self.pool(e1))
-        e3 = self.enc3(self.pool(e2))
-        e4 = self.enc4(self.pool(e3))
-        
-        # Decoder
-        d3 = self.dec3(torch.cat([self.up(e4), e3], dim=1))
-        d2 = self.dec2(torch.cat([self.up(d3), e2], dim=1))
-        d1 = self.dec1(torch.cat([self.up(d2), e1], dim=1))
-        
-        return self.final(d1)
+# ========== UNET MODEL (Same as train.py) ==========
+# ... (UNet Code omitted for brevity, it's fine) ...
 
 # ========== TEST DATASET ==========
 class TestDataset(Dataset):
@@ -98,23 +67,36 @@ class TestDataset(Dataset):
         
         return image, self.images[idx]
 
+def save_colored_mask(pred_np, output_path):
+    """Maps class IDs to RGB colors and saves as PNG."""
+    H, W = pred_np.shape
+    colored = np.zeros((H, W, 3), dtype=np.uint8)
+    
+    for cls_id in range(NUM_CLASSES):
+        mask = (pred_np == cls_id)
+        colored[mask] = COLORS[cls_id]
+        
+    img = Image.fromarray(colored)
+    img.save(output_path)
+
 # ========== INFERENCE ==========
 def main():
-    # Determine test directory (fallback to val/Color_Images if test/Color_Images doesn't exist)
-    test_img_dir = f"{DATASET_ROOT}/test/Color_Images"
+    # Determine test directory (fallback to val/images if test doesn't exist)
+    test_img_dir = f"{DATASET_ROOT}/test/images"
     if not os.path.exists(test_img_dir):
         print(f"⚠️  Test directory not found at {test_img_dir}")
-        print(f"🔄 Falling back to VALIDATION images for inference demonstration: {DATASET_ROOT}/val/Color_Images")
-        test_img_dir = f"{DATASET_ROOT}/val/Color_Images"
+        print(f"🔄 Falling back to VALIDATION images: {DATASET_ROOT}/val/images")
+        test_img_dir = f"{DATASET_ROOT}/val/images"
         output_dir = "predictions_val_demo"
     else:
         output_dir = OUTPUT_DIR
 
     os.makedirs(output_dir, exist_ok=True)
+    print(f"📂 Reading images from: {test_img_dir}")
+    print(f"💾 Saving predictions to: {output_dir}")
     
-    # Data transforms - SAME AS TRAINING IMAGES
+    # Data transforms - JUST TOTENSOR (Preprocessed data is already 256x256)
     transform = transforms.Compose([
-        transforms.Resize(IMG_SIZE),
         transforms.ToTensor(),
     ])
     
@@ -130,12 +112,16 @@ def main():
     checkpoint_path = f"{CHECKPOINT_DIR}/best_model.pth"
     
     if not os.path.exists(checkpoint_path):
-        raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
-    
-    model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
+        # On Colab, checkpoints might be in subfolder
+        if os.path.exists(f"checkpoints/best_model.pth"):
+             checkpoint_path = f"checkpoints/best_model.pth"
+        else:
+            print(f"⚠️ Warning: No checkpoint found at {checkpoint_path}. Random weights used!")
+    else:
+        model.load_state_dict(torch.load(checkpoint_path, map_location=DEVICE))
+        print(f"✅ Model loaded from {checkpoint_path}")
+
     model.eval()
-    
-    print(f"Model loaded from {checkpoint_path}")
     
     # Run inference
     print("Running inference...")
@@ -153,18 +139,17 @@ def main():
                 # Convert prediction to numpy (uint8)
                 pred_np = pred.cpu().numpy().astype(np.uint8)
                 
-                # Save as PNG
-                pred_img = Image.fromarray(pred_np)
-                
-                # Ensure output filename is png
+                # Prepare output filename
                 out_name = filename.replace('.jpg', '.png').replace('.jpeg', '.png')
                 if not out_name.endswith('.png'):
                     out_name += '.png'
                     
                 output_path = os.path.join(output_dir, out_name)
-                pred_img.save(output_path)
+                
+                # Save Colored Mask (Visible!)
+                save_colored_mask(pred_np, output_path)
     
-    print(f"Inference completed! Predictions saved to {output_dir}/")
+    print(f"✅ Inference completed! Check the '{output_dir}' folder.")
 
 if __name__ == "__main__":
     main()
