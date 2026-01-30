@@ -80,5 +80,5 @@ python test.py
 
 ---
 
-**Author**: [Your Name/Team]
+**Author**: [S SOHEB]
 **Hackathon**: HackDefence 2026
