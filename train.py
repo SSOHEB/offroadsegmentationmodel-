@@ -120,8 +120,8 @@ def calculate_iou(pred, target, num_classes):
     for cls in range(num_classes):
         pred_cls = (pred == cls)
         target_cls = (target == cls)
-        intersection = (pred_cls & target_cls).sum().float()
-        union = (pred_cls | target_cls).sum().float()
+        intersection = (pred_cls & target_cls).sum().float().item()
+        union = (pred_cls | target_cls).sum().float().item()
         if union > 0:
             ious.append(intersection / union)
     return np.mean(ious) if ious else 0
