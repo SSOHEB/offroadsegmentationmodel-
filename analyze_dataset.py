@@ -11,6 +11,24 @@ DIRS_TO_SCAN = [
     ("val",   os.path.join(DATASET_ROOT, "val", "Color_Images"),   os.path.join(DATASET_ROOT, "val", "Segmentation"))
 ]
 
+# Debug Check
+if not os.path.exists(DATASET_ROOT):
+    print(f"ERROR: DATASET_ROOT not found at {DATASET_ROOT}")
+    # Fallback to local if exists
+    if os.path.exists("dataset_root"):
+        print("Found local 'dataset_root', trying that...")
+        DATASET_ROOT = "dataset_root"
+        DIRS_TO_SCAN = [
+            ("train", os.path.join(DATASET_ROOT, "train", "images"), os.path.join(DATASET_ROOT, "train", "masks")),
+            ("val",   os.path.join(DATASET_ROOT, "val", "images"),   os.path.join(DATASET_ROOT, "val", "masks"))
+        ]
+    else:
+        print("No dataset found.")
+        exit(1)
+
+print(f"Using dataset at: {DATASET_ROOT}")
+
+
 # Raw class values expected in the masks
 EXPECTED_VALUES = {100, 200, 300, 500, 550, 600, 700, 800, 7100, 10000}
 IGNORE_INDEX = 255  # If we were using it, but raw masks shouldn't have it yet effectively
@@ -27,7 +45,7 @@ def check_pair(img_name, mask_dir):
     return None
 
 def analyze_dataset():
-    print("=== STARTING DATASET ANALYSIS ===")
+    print("=== STARTING DATASET ANALYSIS ===", flush=True)
     
     global_stats = {
         "scanned_images": 0,
@@ -39,17 +57,22 @@ def analyze_dataset():
     }
 
     for split, img_dir, mask_dir in DIRS_TO_SCAN:
-        print(f"\nProcessing {split} split...")
+        print(f"\nProcessing {split} split...", flush=True)
         
         if not os.path.exists(img_dir) or not os.path.exists(mask_dir):
-            print(f"CRITICAL ERROR: Directory not found: {img_dir} or {mask_dir}")
+            print(f"CRITICAL ERROR: Directory not found: {img_dir} or {mask_dir}", flush=True)
             continue
             
         images = sorted([f for f in os.listdir(img_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
+        print(f"  Found {len(images)} images.", flush=True)
         
-        for img_file in tqdm(images):
+        # Use simple range loop or disable tqdm to avoid stderr buffering issues
+        for i, img_file in enumerate(images):
+            if i % 100 == 0: print(f"  Scanning {i}/{len(images)}...", flush=True)
+            
             global_stats["scanned_images"] += 1
             img_path = os.path.join(img_dir, img_file)
+
             
             # 1. Check Pair
             mask_path = check_pair(img_file, mask_dir)

@@ -24,9 +24,9 @@ def set_seed(seed=42):
 set_seed(42)
 
 # ========== CONFIGURATION ==========
-DATASET_ROOT = "C:/Users/ssohe/Desktop/Offroad_Segmentation_Training_Dataset/Offroad_Segmentation_Training_Dataset"
+DATASET_ROOT = "dataset_256" # UPDATED: Use preprocessed data
 NUM_CLASSES = 10  # Mapped from raw values: 100, 200, 300, 500, 550, 600, 700, 800, 7100, 10000
-BATCH_SIZE = 4
+BATCH_SIZE = 8 # UPDATED: Increased for faster training with smaller images
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 50
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,11 +35,11 @@ IMG_SIZE = (256, 256)
 
 # ========== DATASET ==========
 class SegmentationDataset(Dataset):
-    def __init__(self, image_dir, mask_dir, img_transform=None, mask_transform=None):
+    def __init__(self, image_dir, mask_dir, img_transform=None):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.img_transform = img_transform
-        self.mask_transform = mask_transform
+        # mask_transform removed (not needed for preprocessed data)
         self.images = sorted(os.listdir(image_dir))
         
     def __len__(self):
@@ -47,43 +47,22 @@ class SegmentationDataset(Dataset):
     
     def __getitem__(self, idx):
         img_path = os.path.join(self.image_dir, self.images[idx])
-        # Assumes mask has same filename, potentially different extension
         mask_filename = self.images[idx].replace('.jpg', '.png').replace('.jpeg', '.png')
         mask_path = os.path.join(self.mask_dir, mask_filename)
         
         image = Image.open(img_path).convert('RGB')
-        mask = Image.open(mask_path) # Keep original mode first
+        mask = Image.open(mask_path)
         
         if self.img_transform:
             image = self.img_transform(image)
         
-        # Custom Mask Processing for Resize + Mapping
-        if self.mask_transform:
-            mask = self.mask_transform(mask)
-        
+        # Mask is already 0-9 and 256x256. Just convert to LongTensor.
         mask_np = np.array(mask)
+        mask = torch.from_numpy(mask_np).long()
         
-        # Mapping: {100:0, 200:1, 300:2, 500:3, 550:4, 600:5, 700:6, 800:7, 7100:8, 10000:9}
-        # Initialize with 255 (ignore_index)
-        mask_mapped = np.full_like(mask_np, 255, dtype=np.int64)
-        
-        mapping = {
-            100: 0, 200: 1, 300: 2, 500: 3, 550: 4, 
-            600: 5, 700: 6, 800: 7, 7100: 8, 10000: 9
-        }
-        
-        for k, v in mapping.items():
-            mask_mapped[mask_np == k] = v
-            
-        mask = torch.from_numpy(mask_mapped).long()
         if mask.ndim == 3:
-            mask = mask.squeeze(0) # (1, H, W) -> (H, W)
+            mask = mask.squeeze(0)
                 
-        # Sanity check for labels (optional warning)
-        if hasattr(mask, 'max') and mask.max() >= NUM_CLASSES:
-             # Using print sparingly to avoid log spam, consider logging once per run in production
-             pass 
-        
         return image, mask
 
 # ========== UNET MODEL ==========
@@ -150,32 +129,43 @@ def calculate_iou(pred, target, num_classes):
 def main():
     # Data transforms
     
-    # Image: Resize + Scale to [0,1] + Tensor conversion
+    # Image: Just ToTensor (Resize was done offline)
     img_transform = transforms.Compose([
-        transforms.Resize(IMG_SIZE),
         transforms.ToTensor(),
     ])
     
-    # Mask: Resize (Nearest Neighbor to preserve classes) + Convert to Tensor (Integer)
-    # Mask: Resize ONLY (Mapping in Dataset)
-    mask_transform = transforms.Resize(IMG_SIZE, interpolation=transforms.InterpolationMode.NEAREST)
-    
-    # Load datasets
+    # Load datasets (Updated paths for dataset_256 structure)
     train_dataset = SegmentationDataset(
-        f"{DATASET_ROOT}/train/Color_Images",
-        f"{DATASET_ROOT}/train/Segmentation",
-        img_transform=img_transform,
-        mask_transform=mask_transform
+        f"{DATASET_ROOT}/train/images",
+        f"{DATASET_ROOT}/train/masks",
+        img_transform=img_transform
     )
     val_dataset = SegmentationDataset(
-        f"{DATASET_ROOT}/val/Color_Images",
-        f"{DATASET_ROOT}/val/Segmentation",
-        img_transform=img_transform,
-        mask_transform=mask_transform
+        f"{DATASET_ROOT}/val/images",
+        f"{DATASET_ROOT}/val/masks",
+        img_transform=img_transform
     )
     
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    # OPTIMIZATION: Use multiple workers and pinned memory
+    # Windows: num_workers can sometimes cause issues if too high. Start with 4.
+    NUM_WORKERS = 4 
+    
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=True, 
+        num_workers=NUM_WORKERS, 
+        pin_memory=True, 
+        persistent_workers=(NUM_WORKERS > 0)
+    )
+    val_loader = DataLoader(
+        val_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        num_workers=NUM_WORKERS, 
+        pin_memory=True, 
+        persistent_workers=(NUM_WORKERS > 0)
+    )
     
     # Sanity check: Validate NUM_CLASSES on the first batch
     try:
@@ -194,16 +184,57 @@ def main():
     except Exception as e:
         print(f"⚠️ Could not validate classes (Dataset might be empty or loading failed): {e}")
 
+    # Validating NUM_CLASSES on first batch...
+    # (Output omitted for brevity)
+
+    # ========== CLASS WEIGHTS (Calculated from Phase 1 Analysis) ==========
+    # Class 700 is extremely rare (0.08%), Class 10000 dominates (37.65%)
+    class_counts = [
+        59016700,   # 100
+        97779781,   # 200
+        311208907,  # 300
+        18074830,   # 500
+        72049226,   # 550
+        45587751,   # 600
+        1263280,    # 700! (Severe Imbalance)
+        19738472,   # 800
+        401180128,  # 7100
+        619502525   # 10000
+    ]
+    
+    # Calculate weights: Total / (NumClasses * ClassCount)
+    total_pixels = sum(class_counts)
+    weights = [total_pixels / (NUM_CLASSES * c) for c in class_counts]
+    
+    # Clamp extreme weights to prevent instability (e.g., class 700 weight ~130)
+    # A standard practice is to dampen the weights or clamp max value.
+    # Let's verify standard PyTorch weighting first.
+    class_weights = torch.FloatTensor(weights).to(DEVICE)
+    print(f"Using Class Weights: {class_weights}")
+
     # Model, loss, optimizer
     model = UNet(num_classes=NUM_CLASSES).to(DEVICE)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
+    # ========== RESUME LOGIC ==========
+    start_epoch = 0
+    resume_path = f"{CHECKPOINT_DIR}/last_model.pth"
+    if os.path.exists(resume_path):
+        print(f"🔄 Resuming from checkpoint: {resume_path}")
+        checkpoint = torch.load(resume_path, map_location=DEVICE)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        best_val_loss = checkpoint.get('best_val_loss', float('inf'))
+        print(f"   Resuming from Epoch {start_epoch+1}")
+    else:
+        print("🚀 Starting new training run")
     
     # Training loop
     train_losses, val_losses = [], []
-    best_val_loss = float('inf')
     
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(start_epoch, NUM_EPOCHS):
         # Training
         model.train()
         train_loss = 0
@@ -244,10 +275,20 @@ def main():
         
         print(f"Epoch {epoch+1}: Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, Val IoU: {avg_val_iou:.4f}")
         
-        # Save best model
+        # Save checkpoints
+        os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+        
+        # 1. Save Last Model (for resuming)
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'best_val_loss': best_val_loss,
+        }, f"{CHECKPOINT_DIR}/last_model.pth")
+
+        # 2. Save Best Model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            os.makedirs(CHECKPOINT_DIR, exist_ok=True)
             torch.save(model.state_dict(), f"{CHECKPOINT_DIR}/best_model.pth")
     
     # Plot training curves
@@ -263,4 +304,7 @@ def main():
     print(f"Training completed! Best model saved to {CHECKPOINT_DIR}/best_model.pth")
 
 if __name__ == "__main__":
+    # Required for Windows multiprocessing
+    torch.multiprocessing.freeze_support()
+    print(f"Using Device: {DEVICE}")
     main()
