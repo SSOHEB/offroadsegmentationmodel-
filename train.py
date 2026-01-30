@@ -147,8 +147,8 @@ def main():
     )
     
     # OPTIMIZATION: Use multiple workers and pinned memory
-    # Windows: num_workers can sometimes cause issues if too high. Start with 4.
-    NUM_WORKERS = 4 
+    # Colab T4 has 2 vCPUs, so 2 workers is optimal. 4 causes warnings/overhead.
+    NUM_WORKERS = 2 
     
     train_loader = DataLoader(
         train_dataset, 
@@ -219,7 +219,9 @@ def main():
     
     # ========== RESUME LOGIC ==========
     start_epoch = 0
+    best_val_loss = float('inf') # Initialize default
     resume_path = f"{CHECKPOINT_DIR}/last_model.pth"
+    
     if os.path.exists(resume_path):
         print(f"🔄 Resuming from checkpoint: {resume_path}")
         checkpoint = torch.load(resume_path, map_location=DEVICE)
