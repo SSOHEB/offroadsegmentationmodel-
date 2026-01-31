@@ -51,7 +51,7 @@ Training was conducted over **50 epochs** on a Google Colab T4 GPU.
 
 | Metric | Value |
 | :--- | :--- |
-| **Best Val IoU** | 0.549 (54.9%) |
+| **Best Val IoU** | **57.2%** (with TTA) |
 | **Best Val Loss** | 0.3449 (Epoch 50) |
 | **Training Time** | ~1.5 hours (50 epochs on T4 GPU) |
 | **Time per Epoch** | ~2 minutes |

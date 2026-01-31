@@ -101,8 +101,8 @@ Output (10×256×256)
 Epoch 10: IoU = 0.37
 Epoch 25: IoU = 0.48
 Epoch 40: IoU = 0.53
-Epoch 43: IoU = 0.549 (Best)
-Epoch 50: IoU = 0.526 (Final)
+Epoch 50: IoU = 0.555 (Base)
+With TTA: IoU = 0.572 (Final)
 ```
 
 ### 2.4 Per-Class Performance (Estimated)
@@ -129,7 +129,7 @@ Epoch 50: IoU = 0.526 (Final)
 class_weights = [total_pixels / (num_classes × class_pixels)]
 ```
 
-**Result**: Rare classes became detectable; overall IoU improved from 0.31 to 0.549.
+**Result**: Rare classes became detectable; overall IoU improved from 0.31 to 0.572.
 
 ---
 
@@ -148,7 +148,7 @@ class_weights = [total_pixels / (num_classes × class_pixels)]
 
 ### Challenge 3: Pretrained Models Underperformed
 
-**Problem**: ResNet34 pretrained on ImageNet achieved lower IoU (45%) than custom UNet (54.9%).
+**Problem**: ResNet34 pretrained on ImageNet achieved lower IoU (45%) than custom UNet (57.2%).
 
 **Analysis**: 
 - ImageNet features (cats, dogs) don't transfer well to desert terrain

@@ -3,7 +3,7 @@
 ## Executive Summary
 | Experiment | Model | Loss | Final IoU | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **EXP-1** | Custom UNet | CrossEntropy (Weighted) | **0.549** | ✅ Best |
+| **EXP-1** | Custom UNet | CE + Class Weights | **57.2%** (TTA) | ✅ Best |
 | **EXP-2** | Custom UNet | Dice+CE + Scheduler | 0.4057 | ❌ Failed |
 | **EXP-3** | ResNet34-UNet | CE (ImageNet pretrained) | 0.4500 | ❌ Lower |
 | **EXP-4** | Custom UNet | CE (100 epochs) | 0.5107 | ⚠️ Oscillating |
@@ -23,7 +23,7 @@
 | Resolution | 256×256 |
 
 ### Results
--   **Final Val IoU**: 0.549 (54.9%)
+-   **Final Val IoU**: **57.2%** (with TTA)
 -   **Training Time**: ~1.5 hours
 -   **Model File**: `checkpoints/best_model.pth`
 
@@ -37,7 +37,7 @@
 ### Results
 | Metric | EXP-1 | EXP-2 |
 | :--- | :--- | :--- |
-| **Final Val IoU** | 0.549 | 0.4057 |
+| **Final Val IoU** | **57.2%** (TTA) | 0.4057 |
 | **Convergence** | Smooth | Slow, oscillating |
 
 ### Lesson Learned
