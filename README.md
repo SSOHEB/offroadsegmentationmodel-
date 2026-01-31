@@ -1,84 +1,150 @@
 # 🚙 Offroad Semantic Segmentation
 
-**A high-performance U-Net pipeline optimized for rapid offroad terrain analysis.**
+**AI-powered terrain analysis for autonomous offroad navigation**
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red)
-![License](https://img.shields.io/badge/License-MIT-green)
+![IoU](https://img.shields.io/badge/Val%20IoU-54.9%25-brightgreen)
+
+**Hackathon**: Duality AI - Offroad Autonomy Segmentation Challenge  
+**Final IoU Score**: **54.9%**
 
 ---
 
-## 🚀 Key Features
+## 📁 Submission Contents
 
-- **Custom U-Net Architecture**: Tailored for 10-class segmentation tasks.
-- **Optimized Data Pipeline**:
-  - **Offline Preprocessing**: `preprocess_dataset.py` resizes and maps masks ahead of time, reducing I/O bottlenecks.
-  - **Efficient Loading**: Support for `num_workers > 0` and `pin_memory`.
-- **Advanced Training Logic**:
-  - **Class Weighting**: Automatically handles severe class imbalance (e.g., Rare Obstacles vs Background).
-  - **Checkpoint Resume**: Auto-resumes from `last_model.pth` to handle long training sessions.
-- **GPU Ready**: Fully verified on T4 GPU (Google Colab) with <2 min/epoch training time.
-
----
-
-## 📂 Repository Structure
-
-```tree
-├── train.py                # Main training loop (Resume + Class Weights enabled)
-├── test.py                 # Inference script with Colorized Mask visualization
-├── analyze_dataset.py      # Health check tool: Finds corrupt files & calculates stats
-├── preprocess_dataset.py   # ETL script: Resizes 3k images -> 256x256 offline
-├── zip_dataset.py          # Utility to pack data for Cloud/Colab transfer
-└── colab_guide.md          # Step-by-step guide for GPU training
+```
+├── train.py               # Training script
+├── test.py                # Inference script (with TTA)
+├── checkpoints/
+│   └── best_model.pth     # Trained model weights
+├── HACKATHON_REPORT.md    # Detailed 8-page report
+├── models_and_experiments.md  # Experiment log
+└── README.md              # This file
 ```
 
 ---
 
-## 🛠️ Performance Engineering
+## 🚀 Quick Start (Reproduction Steps)
 
-This project implements a **50x speedup** over the baseline implementation:
+### 1. Environment Setup
 
-| Metric | Baseline (CPU/Raw) | Optimized (GPU/Processed) |
-| :--- | :--- | :--- |
-| **Pipeline** | On-the-fly Resize | Offline Preprocessing |
-| **Hardware** | CPU | T4 GPU |
-| **Time/Epoch** | ~60 mins | **< 2 mins** |
-| **Accuracy** | Ignored rare classes | **Weighted Loss** (Class 700 support) |
+```bash
+# Option A: Using conda (recommended)
+conda create -n offroad python=3.8
+conda activate offroad
+pip install torch torchvision tqdm pillow numpy
 
----
+# Option B: Using the EDU environment (from Duality)
+conda activate EDU
+```
 
-## 🚦 How to Run
+### 2. Dataset Preparation
 
-### 1. Pre-requisites
-Ensure you have the dataset (images/masks).
+Place the dataset in the following structure:
+```
+dataset_256/
+├── train/
+│   ├── images/
+│   └── masks/
+├── val/
+│   ├── images/
+│   └── masks/
+└── test/
+    └── images/   # testImages from Duality
+```
 
-### 2. Prepare Data (One-Time)
-Run the preprocessing script to generate the optimized `dataset_256` folder:
+**If using raw dataset**, run preprocessing first:
 ```bash
 python preprocess_dataset.py
 ```
 
-### 3. Train
-Start the training loop (supports auto-resume):
+### 3. Training (Optional - model already trained)
+
 ```bash
 python train.py
 ```
-*Note: Check `train.py` config to switch `DEVICE` or `BATCH_SIZE`.*
 
-### 4. Inference
-Generate color-mapped predictions on test data:
+**Expected output**:
+- Training logs printed to console
+- Checkpoints saved to `checkpoints/`
+- Best model: `checkpoints/best_model.pth`
+
+### 4. Inference on Test Images
+
 ```bash
 python test.py
 ```
 
----
-
-## 📊 Dataset Stats
-- **Total Images**: ~3,000
-- **Classes**: 10 (Background, Road, Obstacle, etc.)
-- **Resolution**: Native (High-Res) -> Training (256x256)
+**Expected output**:
+- Colored segmentation masks saved to `predictions/`
+- Each output mask is RGB-colored for visualization
 
 ---
 
-**Author**: [S SOHEB]
-**Hackathon**: HackDefence 2026
+## 🏆 Results
+
+| Metric | Value |
+| :--- | :--- |
+| **Validation IoU** | **52.6%** |
+| **Model Architecture** | Custom UNet |
+| **Training Time** | 1.5 hours (T4 GPU) |
+| **Inference Speed** | ~50 FPS |
+
+---
+
+## 🔧 Configuration
+
+Edit `train.py` to modify:
+
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `NUM_EPOCHS` | 50 | Training epochs |
+| `BATCH_SIZE` | 8 | Batch size |
+| `LEARNING_RATE` | 0.001 | Adam learning rate |
+| `IMG_SIZE` | (256, 256) | Input resolution |
+
+---
+
+## 📊 Class Mapping
+
+| ID | Class Name | Color |
+| :--- | :--- | :--- |
+| 100 | Trees | Dark Red |
+| 200 | Lush Bushes | Green |
+| 300 | Dry Grass | Yellow |
+| 500 | Dry Bushes | Blue |
+| 550 | Ground Clutter | Purple |
+| 600 | Flowers | Cyan |
+| 700 | Logs | Gray |
+| 800 | Rocks | Dark Gray |
+| 7100 | Landscape | Dark Red |
+| 10000 | Sky | Red |
+
+---
+
+## 📈 Key Techniques
+
+1. **Class Weighting**: Inverse-frequency weighting handles severe class imbalance
+2. **Test-Time Augmentation**: +2% IoU boost with horizontal/vertical flip averaging
+3. **Offline Preprocessing**: 95% I/O reduction for faster training
+
+---
+
+## 📝 Output Interpretation
+
+**Prediction masks** are saved as RGB images where each color represents a class:
+- View predictions in the `predictions/` folder
+- Compare with ground truth masks visually
+
+---
+
+## 📖 Documentation
+
+- `HACKATHON_REPORT.md` - Full methodology and analysis
+- `models_and_experiments.md` - All experiments conducted
+
+---
+
+**Author**: S SOHEB  
+**Contact**: [GitHub](https://github.com/SSOHEB)

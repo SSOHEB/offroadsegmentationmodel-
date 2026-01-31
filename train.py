@@ -256,7 +256,7 @@ def main():
     
     # NEW: LR Scheduler - Reduce LR when validation loss plateaus
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.5, patience=5, verbose=True
+        optimizer, mode='min', factor=0.5, patience=5
     )
     
     # ========== RESUME LOGIC ==========
