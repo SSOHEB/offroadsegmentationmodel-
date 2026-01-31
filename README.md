@@ -86,7 +86,7 @@ python test.py
 
 | Metric | Value |
 | :--- | :--- |
-| **Validation IoU** | **52.6%** |
+| **Validation IoU** | **54.9%** |
 | **Model Architecture** | Custom UNet |
 | **Training Time** | 1.5 hours (T4 GPU) |
 | **Inference Speed** | ~50 FPS |

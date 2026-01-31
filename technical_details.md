@@ -39,7 +39,7 @@ We implemented a **U-Net** architecture, chosen for its ability to capture both 
 
 | Metric | Value |
 | :--- | :--- |
-| **Final Val IoU** | **0.5264** (52.6%) |
+| **Final Val IoU** | **0.549** (54.9%) |
 | **Training Epochs** | 50 |
 | **Time per Epoch** | ~2 minutes (Colab T4) |
 | **Total Training Time** | ~1.5 hours |

@@ -85,7 +85,7 @@ Output (10×256×256)
 
 | # | Model | Configuration | IoU | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | Custom UNet | CE + Class Weights | **52.6%** | ✅ Best |
+| 1 | Custom UNet | CE + Class Weights | **54.9%** | ✅ Best |
 | 2 | Custom UNet | Dice+CE Combined | 40.6% | ❌ |
 | 3 | ResNet34-UNet | Pretrained Encoder | 45.0% | ❌ |
 | 4 | Custom UNet | 100 epochs | 51.1% | ⚠️ |
@@ -148,7 +148,7 @@ class_weights = [total_pixels / (num_classes × class_pixels)]
 
 ### Challenge 3: Pretrained Models Underperformed
 
-**Problem**: ResNet34 pretrained on ImageNet achieved lower IoU (45%) than custom UNet (52.6%).
+**Problem**: ResNet34 pretrained on ImageNet achieved lower IoU (45%) than custom UNet (54.9%).
 
 **Analysis**: 
 - ImageNet features (cats, dogs) don't transfer well to desert terrain
