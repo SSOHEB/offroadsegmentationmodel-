@@ -187,6 +187,14 @@ class_weights = [total_pixels / (num_classes × class_pixels)]
 | Edge imprecision | Downsampling artifacts | Use higher resolution |
 | Shadow misclassification | Color variation | Brightness augmentation |
 
+### Sample Prediction Outputs:
+
+| Complex Scene | Simple Scene |
+| :---: | :---: |
+| ![Prediction 1](predictions_val_demo/cc0000016.png) | ![Prediction 2](predictions_val_demo/cc0000137.png) |
+
+*Above: Model segmentation outputs on validation images showing class predictions.*
+
 ---
 
 ## 5. Optimizations Applied
