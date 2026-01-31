@@ -48,7 +48,17 @@
 | 47 | 0.3486 | 0.4512 | 0.4789 | Recovering |
 | 48 | 0.3444 | 0.4886 | 0.4649 | Still recovering |
 | 49 | 0.3666 | 0.3702 | 0.5461 | Back on track |
-| **50** | **0.3566** | **0.3449** | **0.5264** | ✅ **Training Complete!** |
+| **50** | **0.3566** | **0.3449** | **0.5550** | ✅ **Base Training Complete!** |
+
+### 🎯 Final Result with TTA
+
+After applying **Test-Time Augmentation (TTA)**, the final IoU improved:
+
+| Metric | Base Model | With TTA |
+| :--- | :--- | :--- |
+| **Val IoU** | 55.5% | **57.2%** ✅ |
+
+*TTA: Averaging predictions from original + horizontal flip + vertical flip*
 
 ## 🧠 Hypotheses & Decisions
 

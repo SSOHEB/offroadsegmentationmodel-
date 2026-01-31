@@ -86,15 +86,18 @@ Output (10×256×256)
 
 | # | Model | Configuration | IoU | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | Custom UNet | CE + Class Weights | **55.5%** (57.2% TTA) | ✅ Best |
+| 1 | Custom UNet | CE + Class Weights | **57.2%** (TTA) | ✅ Best |
 | 2 | Custom UNet | Dice+CE Combined | 40.6% | ❌ |
 | 3 | ResNet34-UNet | Pretrained Encoder | 45.0% | ❌ |
 | 4 | Custom UNet | 100 epochs | 51.1% | ⚠️ |
-| 5 | ResNet34-UNet | Frozen Encoder | 40.5% | ❌ |
-| 6 | Custom UNet | 512×512 resolution | 20.4%* | ⚠️ |
+| 5 | ResNet34-UNet | Frozen Encoder | 42.5% | ❌ |
+| 6 | DeepLabV3+ | CrossEntropy | N/A | ❌ Crashed |
 | 7 | DeepLabV3+ | Focal+Dice Loss | N/A | ❌ Crashed |
+| 8 | EfficientNetV2-S | CE + Class Weights | 51.0% | ❌ |
+| 9 | EfficientNetV2-FPN | All Optimizations | 51.8% | ❌ |
 
-*Only 1 epoch completed before switching strategy
+**Key Insight**: Simple Custom UNet with class weighting outperformed all pretrained models.
+
 
 ### 2.3 Training Progression
 

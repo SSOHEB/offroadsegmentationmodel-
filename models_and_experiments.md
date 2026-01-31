@@ -3,11 +3,16 @@
 ## Executive Summary
 | Experiment | Model | Loss | Final IoU | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **EXP-1** | Custom UNet | CE + Class Weights | **57.2%** (TTA) | ✅ Best |
-| **EXP-2** | Custom UNet | Dice+CE + Scheduler | 0.4057 | ❌ Failed |
-| **EXP-3** | ResNet34-UNet | CE (ImageNet pretrained) | 0.4500 | ❌ Lower |
-| **EXP-4** | Custom UNet | CE (100 epochs) | 0.5107 | ⚠️ Oscillating |
-| **EXP-5** | ResNet34-UNet | CE (Frozen Encoder) | TBD | 🔄 Next |
+| **EXP-1** | Custom UNet | CE + Class Weights | **57.2%** (TTA) | ✅ **Best** |
+| EXP-2 | Custom UNet | Dice+CE + Scheduler | 40.6% | ❌ Failed |
+| EXP-3 | ResNet34-UNet | CE (ImageNet pretrained) | 45.0% | ❌ Lower |
+| EXP-4 | Custom UNet | CE (100 epochs) | 51.1% | ⚠️ Oscillating |
+| EXP-5 | ResNet34-UNet | CE (Frozen Encoder) | 42.5% | ❌ Lower |
+| EXP-6 | DeepLabV3+ | CE | N/A | ❌ Crashed |
+| EXP-7 | DeepLabV3+ | Focal+Dice Loss | N/A | ❌ Crashed |
+| EXP-8 | EfficientNetV2-S | CE + Class Weights | 51.0% | ❌ Lower |
+| EXP-9 | EfficientNetV2-FPN | CE + All Optimizations | 51.8% | ❌ Lower |
+
 
 ---
 
@@ -106,25 +111,82 @@
 
 ---
 
-## Experiment 5: Frozen Encoder (PLANNED 🔄)
+## Experiment 5: Frozen Encoder (COMPLETED ❌)
 
 ### Hypothesis
 > "Freezing the pretrained ResNet encoder and only training the decoder will preserve ImageNet features while adapting to our domain."
 
+### Results
+-   **Final Val IoU**: 42.5%
+-   **Issue**: Frozen features didn't adapt well to synthetic terrain
+
+---
+
+## Experiment 6: DeepLabV3+ (CRASHED ❌)
+
 ### Configuration
 | Parameter | Value |
 | :--- | :--- |
-| Model | UNet with ResNet34 encoder |
-| Encoder | **FROZEN** (ImageNet weights fixed) |
-| Decoder | Trainable |
-| Loss | CrossEntropyLoss (Weighted) |
-| LR | 0.001 (higher, since only decoder trains) |
-| Epochs | 50 |
+| Model | DeepLabV3+ (ResNet50 backbone) |
+| Loss | CrossEntropyLoss |
 
-### Expected Benefit
--   ImageNet features preserved (no domain gap tuning)
--   Faster training (fewer parameters)
--   Decoder learns domain-specific patterns
+### Results
+-   **Status**: CRASHED — CUDA memory issues on Kaggle GPU
+
+---
+
+## Experiment 7: DeepLabV3+ with Focal+Dice (CRASHED ❌)
+
+### Configuration
+| Parameter | Value |
+| :--- | :--- |
+| Model | DeepLabV3+ |
+| Loss | Focal + Dice combined |
+
+### Results
+-   **Status**: CRASHED — Same memory issues
+
+---
+
+## Experiment 8: EfficientNetV2-S (COMPLETED ❌)
+
+### Hypothesis
+> "EfficientNetV2 is state-of-the-art, should outperform custom UNet."
+
+### Configuration
+| Parameter | Value |
+| :--- | :--- |
+| Model | EfficientNetV2-S encoder + UNet decoder |
+| Loss | CrossEntropyLoss (Weighted) |
+| Epochs | 30 |
+
+### Results
+-   **Final Val IoU**: 51.0%
+-   **Analysis**: Pretrained features didn't help with synthetic data
+
+---
+
+## Experiment 9: EfficientNetV2-FPN (COMPLETED ❌)
+
+### Hypothesis
+> "FPN decoder with all optimizations will beat baseline."
+
+### Configuration
+| Parameter | Value |
+| :--- | :--- |
+| Model | EfficientNetV2-S + FPN decoder |
+| Loss | CrossEntropyLoss (Weighted) |
+| Optimizer | AdamW |
+| Scheduler | CosineAnnealingWarmRestarts |
+| Epochs | 30 |
+
+### Results
+-   **Final Val IoU**: 51.8%
+-   **Best at Epoch**: 29
+
+### Key Insight
+> **Simple Custom UNet (57.2%) beats complex EfficientNetV2-FPN (51.8%)**
+> Pretrained ImageNet models don't help with synthetic terrain data.
 
 ---
 
@@ -136,13 +198,15 @@
 | **Class Weighting** | High — rare classes detectable |
 | **Offline Preprocessing** | High — 95% I/O reduction |
 | **GPU Migration** | High — 34× speedup |
+| **Test-Time Augmentation (TTA)** | +2% IoU boost |
 
 ### ❌ Didn't Work
 | Technique | Issue |
 | :--- | :--- |
 | **Dice+CE Loss** | Slower convergence |
-| **Pretrained ResNet (full training)** | Domain gap hurt accuracy |
+| **Pretrained ResNet/EfficientNet** | Domain gap hurt accuracy |
 | **100 epochs** | Oscillation, no improvement |
+| **DeepLabV3+** | Memory crashes |
 
 ---
 
@@ -150,6 +214,6 @@
 
 | File | Experiment | IoU |
 | :--- | :--- | :--- |
-| `best_model.pth` (local) | EXP-1 | **0.52** |
-| `resnet_checkpoints/` | EXP-3 | 0.45 |
-| `unet_100epoch_checkpoints/` | EXP-4 | 0.51 |
+| `best_model.pth` | EXP-1 | **57.2%** (TTA) |
+| `resnet_checkpoints/` | EXP-3 | 45.0% |
+| `unet_100epoch_checkpoints/` | EXP-4 | 51.1% |

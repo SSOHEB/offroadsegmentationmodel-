@@ -123,6 +123,23 @@ Edit `train.py` to modify:
 
 ---
 
+## 🧪 Experiments Summary
+
+| # | Model | IoU | Status |
+| :--- | :--- | :--- | :--- |
+| 1 | Custom UNet + Class Weights | **57.2%** | ✅ Best |
+| 2 | Custom UNet + Dice+CE | 40.6% | ❌ |
+| 3 | ResNet34-UNet | 45.0% | ❌ |
+| 4 | Custom UNet (100 epochs) | 51.1% | ⚠️ |
+| 5 | ResNet34-UNet (Frozen) | 42.5% | ❌ |
+| 6-7 | DeepLabV3+ | N/A | ❌ Crashed |
+| 8 | EfficientNetV2-S | 51.0% | ❌ |
+| 9 | EfficientNetV2-FPN | 51.8% | ❌ |
+
+**Key Finding**: Simple Custom UNet outperforms all pretrained models on synthetic data!
+
+---
+
 ## 📈 Key Techniques
 
 1. **Class Weighting**: Inverse-frequency weighting handles severe class imbalance
