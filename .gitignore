@@ -10,8 +10,10 @@ env/
 anaconda3/
 
 # Data & Models
-checkpoints/
+# checkpoints/  # Allow this for submission
 *.pth
+!checkpoints/best_model.pth  # Allow best model
+!checkpoints/training_curve.png  # Allow training curve
 data/
 dataset/
 **/*Dataset*/

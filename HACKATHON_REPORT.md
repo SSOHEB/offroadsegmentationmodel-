@@ -193,7 +193,15 @@ class_weights = [total_pixels / (num_classes × class_pixels)]
 | :---: | :---: |
 | ![Prediction 1](predictions_val_demo/cc0000016.png) | ![Prediction 2](predictions_val_demo/cc0000137.png) |
 
-*Above: Model segmentation outputs on validation images showing class predictions.*
+| Forest Scene | Desert Scene |
+| :---: | :---: |
+| ![Prediction 3](predictions_val_demo/w0000102.png) | ![Prediction 4](predictions_val_demo/mt0000035.png) |
+
+| Rocky Terrain | Flat Landscape |
+| :---: | :---: |
+| ![Prediction 5](predictions_val_demo/ww10000041.png) | ![Prediction 6](predictions_val_demo/cc0000382.png) |
+
+*Above: Model segmentation outputs showing different terrain types and conditions.*
 
 ---
 
