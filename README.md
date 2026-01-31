@@ -146,5 +146,6 @@ Edit `train.py` to modify:
 
 ---
 
-**Author**: S SOHEB  
-**Contact**: [GitHub](https://github.com/SSOHEB)
+**Team Leader**: Karthik Rajarapu  
+**Team Members**: S. Soheb, Binita, Divya  
+**Contact**: [GitHub](https://github.com/SSOHEB/offroadsegmentationmodel-)

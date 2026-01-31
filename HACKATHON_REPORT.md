@@ -1,6 +1,7 @@
 # Offroad Semantic Segmentation - Hackathon Report
 
-**Team Member**: S SOHEB  
+**Team Leader**: Karthik Rajarapu  
+**Team Members**: S. Soheb, Binita, Divya  
 **Hackathon**: Duality AI - Offroad Autonomy Segmentation Challenge  
 **Date**: January 31, 2026
 
@@ -252,4 +253,5 @@ python test.py
 
 **Thank you for reviewing our submission!**
 
-*Contact: S SOHEB*
+*Team Leader: Karthik Rajarapu*  
+*Team Members: S. Soheb, Binita, Divya*
