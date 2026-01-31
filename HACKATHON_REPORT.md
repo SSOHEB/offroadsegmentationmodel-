@@ -16,7 +16,7 @@ This report documents our approach to training a semantic segmentation model for
 | **Final IoU Score** | **57.2%** (with TTA) |
 | **Model Architecture** | Custom UNet (4 encoder, 4 decoder blocks) |
 | **Training Time** | 1.5 hours (T4 GPU) |
-| **Experiments Conducted** | 7 |
+| **Experiments Conducted** | 9 |
 
 ---
 
