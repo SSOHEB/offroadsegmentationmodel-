@@ -4,10 +4,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red)
-![IoU](https://img.shields.io/badge/Val%20IoU-54.9%25-brightgreen)
+![IoU](https://img.shields.io/badge/Val%20IoU-57.2%25-brightgreen)
 
 **Hackathon**: Duality AI - Offroad Autonomy Segmentation Challenge  
-**Final IoU Score**: **54.9%**
+**Final IoU Score**: **57.2%** (with TTA)
 
 ---
 
@@ -86,7 +86,7 @@ python test.py
 
 | Metric | Value |
 | :--- | :--- |
-| **Validation IoU** | **54.9%** |
+| **Validation IoU** | **57.2%** (with TTA) |
 | **Model Architecture** | Custom UNet |
 | **Training Time** | 1.5 hours (T4 GPU) |
 | **Inference Speed** | ~50 FPS |

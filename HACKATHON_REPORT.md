@@ -8,11 +8,11 @@
 
 ## Executive Summary
 
-This report documents our approach to training a semantic segmentation model for offroad terrain analysis using Duality AI's synthetic desert environment dataset. Our best model achieved **54.9% IoU** using a custom UNet architecture with class-weighted CrossEntropy loss.
+This report documents our approach to training a semantic segmentation model for offroad terrain analysis using Duality AI's synthetic desert environment dataset. Our best model achieved **55.5% IoU** (57.2% with TTA) using a custom UNet architecture with class-weighted CrossEntropy loss.
 
 | Metric | Value |
 | :--- | :--- |
-| **Final IoU Score** | **54.9%** |
+| **Final IoU Score** | **57.2%** (with TTA) |
 | **Model Architecture** | Custom UNet (4 encoder, 4 decoder blocks) |
 | **Training Time** | 1.5 hours (T4 GPU) |
 | **Experiments Conducted** | 7 |
@@ -79,13 +79,13 @@ Output (10×256×256)
 
 | Split | IoU |
 | :--- | :--- |
-| **Validation** | **54.9%** (Epoch 43) |
+| **Validation** | **55.5%** (57.2% with TTA) |
 
 ### 2.2 Experiments Summary
 
 | # | Model | Configuration | IoU | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | Custom UNet | CE + Class Weights | **54.9%** | ✅ Best |
+| 1 | Custom UNet | CE + Class Weights | **55.5%** (57.2% TTA) | ✅ Best |
 | 2 | Custom UNet | Dice+CE Combined | 40.6% | ❌ |
 | 3 | ResNet34-UNet | Pretrained Encoder | 45.0% | ❌ |
 | 4 | Custom UNet | 100 epochs | 51.1% | ⚠️ |
