@@ -106,6 +106,9 @@ Epoch 50: IoU = 0.555 (Base)
 With TTA: IoU = 0.572 (Final)
 ```
 
+**Training Curve:**
+![Training Loss and IoU Curve](checkpoints/training_curve.png)
+
 ### 2.4 Per-Class Performance (Estimated)
 
 | Class | Expected IoU | Notes |
